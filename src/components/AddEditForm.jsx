@@ -6,7 +6,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -14,14 +14,13 @@ import { red } from "@mui/material/colors";
 import {
   addDoc,
   collection,
-  doc,
-  getDoc,
   getDocs,
   orderBy,
-  setDoc,
+  query,
+  where,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
-import dayjs from "dayjs";
+import { vocabularyContext } from "../App";
 
 const schema = yup
   .object({
@@ -30,8 +29,8 @@ const schema = yup
   .required();
 
 function AddEditForm() {
-  const [vocabularies, setVocabularies] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { vocabularies, setVocabularies, loading, setLoading } =
+    useContext(vocabularyContext);
 
   const {
     register,
@@ -43,23 +42,20 @@ function AddEditForm() {
   });
 
   const onSubmit = async (data) => {
-    setLoading(true);
     data = {
       ...data,
       created_at: new Date(),
     };
     await addDoc(collection(db, "vocabularies"), data);
 
-    setVocabularies({ data, ...vocabularies });
+    setVocabularies([{ ...data }, ...vocabularies]);
     reset({ word: "", meaning: "", example1: "", example2: "" });
-    setLoading(false);
   };
 
   useEffect(() => {
     const getData = async () => {
       const querySnapshot = await getDocs(
-        collection(db, "vocabularies"),
-        orderBy("created_at")
+        query(collection(db, "vocabularies"), orderBy("created_at", "desc"))
       );
 
       const filteredData = querySnapshot.docs.map((doc) => ({

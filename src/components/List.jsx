@@ -10,11 +10,12 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
 import SearchIcon from "@mui/icons-material/Search";
+import { vocabularyContext } from "../App";
 
 const style = {
   position: "absolute",
@@ -30,6 +31,9 @@ const style = {
 };
 
 function List() {
+  const { vocabularies, setVocabularies, loading, setLoading } =
+    useContext(vocabularyContext);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState(false);
 
@@ -61,31 +65,36 @@ function List() {
             />
           </Box>
           <Box mt={2} sx={{ height: "75vh", overflow: "auto" }}>
-            {[1, 1, 1, 1, , 1, 1, 1, 1].map((data) => {
-              return (
-                <>
-                  <Box paddingY={1}>
-                    <Box
-                      sx={{ display: "flex", justifyContent: "space-between" }}
-                    >
-                      <Typography fontWeight={600} fontSize="14px">
-                        Sleep
+            {!loading &&
+              vocabularies.map((data, i) => {
+                return (
+                  <Box key={i}>
+                    <Box paddingY={1}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <Typography fontWeight={600} fontSize="14px">
+                          {data.word}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" color="#6b6b6b">
+                        {data.meaning}
+                      </Typography>
+
+                      <Typography variant="body2" color="#6b6b6b">
+                        {data.example1 ? "• " + data.example1 : ""}
+                      </Typography>
+                      <Typography variant="body2" color="#6b 6b6b">
+                        {data.example2 ? "• " + data.example2 : ""}
                       </Typography>
                     </Box>
-                    <Typography variant="body2" color="#6b6b6b">
-                      not awake
-                    </Typography>
-                    <Typography variant="body2" color="#6b6b6b">
-                      • he is sleeping right now
-                    </Typography>
-                    <Typography variant="body2" color="#6b6b6b">
-                      • he is sleeping right now
-                    </Typography>
+                    <Divider />
                   </Box>
-                  <Divider />
-                </>
-              );
-            })}
+                );
+              })}
           </Box>
         </CardContent>
       </Card>
