@@ -1,14 +1,34 @@
 import { Grid } from "@mui/material";
 import { Container } from "@mui/system";
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import BoardInfo from "./components/BoardInfo";
 import AddEditForm from "./components/AddEditForm";
 import List from "./components/List";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { db } from "./config/firebase";
 
 export const vocabularyContext = createContext();
 function App() {
   const [vocabularies, setVocabularies] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const getData = async () => {
+      const querySnapshot = await getDocs(
+        query(collection(db, "vocabularies"), orderBy("created_at", "desc"))
+      );
+
+      const filteredData = querySnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
+
+      setVocabularies(filteredData);
+      setLoading(false);
+    };
+
+    getData();
+  }, []);
 
   return (
     <vocabularyContext.Provider

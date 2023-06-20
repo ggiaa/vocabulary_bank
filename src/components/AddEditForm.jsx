@@ -6,19 +6,12 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { red } from "@mui/material/colors";
-import {
-  addDoc,
-  collection,
-  getDocs,
-  orderBy,
-  query,
-  where,
-} from "firebase/firestore";
+import { addDoc, collection } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { vocabularyContext } from "../App";
 
@@ -45,30 +38,13 @@ function AddEditForm() {
     data = {
       ...data,
       created_at: new Date(),
+      status: "unlearn",
     };
     await addDoc(collection(db, "vocabularies"), data);
 
     setVocabularies([{ ...data }, ...vocabularies]);
     reset({ word: "", meaning: "", example1: "", example2: "" });
   };
-
-  useEffect(() => {
-    const getData = async () => {
-      const querySnapshot = await getDocs(
-        query(collection(db, "vocabularies"), orderBy("created_at", "desc"))
-      );
-
-      const filteredData = querySnapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-
-      setVocabularies(filteredData);
-      setLoading(false);
-    };
-
-    getData();
-  }, []);
 
   return (
     <Box mt={2}>

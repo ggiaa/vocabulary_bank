@@ -10,12 +10,16 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
 import SearchIcon from "@mui/icons-material/Search";
 import { vocabularyContext } from "../App";
+import { deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { db } from "../config/firebase";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { red } from "@mui/material/colors";
 
 const style = {
   position: "absolute",
@@ -28,14 +32,49 @@ const style = {
   boxShadow: 24,
   p: 4,
   textAlign: "center",
+  display: "flex",
+  flexDirection: "column",
 };
 
 function List() {
   const { vocabularies, setVocabularies, loading, setLoading } =
     useContext(vocabularyContext);
 
+  const [unlearnData, setUnlearnData] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState(false);
+
+  const filteredVocabularies = vocabularies.filter((vocab) =>
+    vocab.word.toLowerCase().includes(searchInput.toLowerCase())
+  );
+
+  const needToLearn = () => {
+    setUnlearnData(unlearnData.slice(1));
+  };
+
+  const learned = async (id) => {
+    await updateDoc(doc(db, "vocabularies", id), {
+      status: "learned",
+    })
+      .then(() => setUnlearnData(unlearnData.slice(1)))
+      .then(() =>
+        setVocabularies(
+          vocabularies.filter((vocab) =>
+            vocab.id == id ? (vocab.status = "learned") : vocab
+          )
+        )
+      );
+  };
+
+  const deleteVocab = async (id) => {
+    await deleteDoc(doc(db, "vocabularies", id));
+    setVocabularies(vocabularies.filter((vocab) => vocab.id != id));
+  };
+
+  useEffect(() => {
+    setUnlearnData(vocabularies.filter((vocab) => vocab.status == "unlearn"));
+  }, [modalOpen]);
 
   return (
     <Box sx={{ height: "100%" }}>
@@ -53,6 +92,8 @@ function List() {
           </Box>
           <Box mt={2}>
             <TextField
+              name="search"
+              onChange={(e) => setSearchInput(e.target.value)}
               fullWidth
               size="small"
               InputProps={{
@@ -66,7 +107,7 @@ function List() {
           </Box>
           <Box mt={2} sx={{ height: "75vh", overflow: "auto" }}>
             {!loading &&
-              vocabularies.map((data, i) => {
+              filteredVocabularies.map((data, i) => {
                 return (
                   <Box key={i}>
                     <Box paddingY={1}>
@@ -79,6 +120,11 @@ function List() {
                         <Typography fontWeight={600} fontSize="14px">
                           {data.word}
                         </Typography>
+                        <DeleteIcon
+                          fontSize="small"
+                          sx={{ cursor: "pointer", color: red[600] }}
+                          onClick={() => deleteVocab(data.id)}
+                        />
                       </Box>
                       <Typography variant="body2" color="#6b6b6b">
                         {data.meaning}
@@ -110,22 +156,8 @@ function List() {
         aria-describedby="modal-modal-description"
       >
         <Box sx={style}>
-          <Box
-            sx={{
-              height: "100%",
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <Box
-              sx={{
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-              }}
-            >
+          {unlearnData.length ? (
+            <>
               <Box
                 sx={{
                   flexGrow: 1,
@@ -137,26 +169,49 @@ function List() {
                 onClick={() => setModalContent(true)}
               >
                 <Typography id="modal-modal-title" variant="h4" component="h2">
-                  Sleep
+                  {unlearnData[0].word}
                 </Typography>
                 <Typography id="modal-modal-description" sx={{ mt: 5 }}>
-                  {modalContent ? "ada" : ""}
+                  {modalContent ? unlearnData[0].meaning : ""}
                 </Typography>
               </Box>
               <Box mt={7} display="flex">
-                <Button variant="outlined" sx={{ width: "50%" }} color="error">
-                  Not Learn Yet
+                <Button
+                  variant="outlined"
+                  sx={{ width: "50%" }}
+                  color="error"
+                  onClick={needToLearn}
+                >
+                  Need to Learn
                 </Button>
                 <Button
                   variant="outlined"
                   sx={{ width: "50%" }}
                   color="primary"
+                  onClick={() => learned(unlearnData[0].id)}
                 >
                   I Know
                 </Button>
               </Box>
+            </>
+          ) : (
+            <Box
+              sx={{
+                display: "flex",
+                height: "100%",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Typography
+                variant="h3"
+                fontWeight="600"
+                sx={{ color: "#dedede" }}
+              >
+                Empty
+              </Typography>
             </Box>
-          </Box>
+          )}
         </Box>
       </Modal>
     </Box>
