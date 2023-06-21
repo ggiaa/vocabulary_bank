@@ -17,7 +17,7 @@ import { vocabularyContext } from "../App";
 
 const schema = yup
   .object({
-    word: yup.string().required(),
+    word: yup.string().required("Insert a word/sentence."),
   })
   .required();
 
@@ -40,10 +40,10 @@ function AddEditForm() {
       created_at: new Date(),
       status: "unlearn",
     };
-    await addDoc(collection(db, "vocabularies"), data);
-
-    setVocabularies([{ ...data }, ...vocabularies]);
-    reset({ word: "", meaning: "", example1: "", example2: "" });
+    await addDoc(collection(db, "vocabularies"), data).then((docRef) => {
+      setVocabularies([{ ...data, id: docRef.id }, ...vocabularies]);
+      reset({ word: "", meaning: "", example1: "", example2: "" });
+    });
   };
 
   return (
