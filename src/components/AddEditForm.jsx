@@ -7,83 +7,84 @@ import {
   Typography,
 } from "@mui/material";
 import React, { useContext } from "react";
-import { useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { red } from "@mui/material/colors";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { vocabularyContext } from "../App";
+import { useFormik } from "formik";
 
-const schema = yup
-  .object({
-    word: yup.string().required("Insert a word/sentence."),
-  })
-  .required();
-
+const validationSchema = yup.object({
+  word: yup.string().required("Insert a word/sentence"),
+});
 function AddEditForm() {
   const { vocabularies, setVocabularies, loading, setLoading } =
     useContext(vocabularyContext);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm({
-    resolver: yupResolver(schema),
+  const formik = useFormik({
+    initialValues: {
+      word: "",
+      meaning: "",
+      example1: "",
+      example2: "",
+    },
+    validationSchema: validationSchema,
+    onSubmit: async (data, { resetForm }) => {
+      data = {
+        ...data,
+        created_at: new Date(),
+        status: "unlearn",
+      };
+      await addDoc(collection(db, "vocabularies"), data).then((docRef) => {
+        setVocabularies([{ ...data, id: docRef.id }, ...vocabularies]);
+      });
+      resetForm();
+    },
   });
-
-  const onSubmit = async (data) => {
-    data = {
-      ...data,
-      created_at: new Date(),
-      status: "unlearn",
-    };
-    await addDoc(collection(db, "vocabularies"), data).then((docRef) => {
-      setVocabularies([{ ...data, id: docRef.id }, ...vocabularies]);
-      reset({ word: "", meaning: "", example1: "", example2: "" });
-    });
-  };
 
   return (
     <Box mt={2}>
       <Card>
         <CardContent>
           <Typography mb={2}>Form</Typography>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Box sx={{ display: "flex", flexDirection: "column", rowGap: 2 }}>
+          <form onSubmit={formik.handleSubmit}>
+            <Box
+              sx={{ display: "flex", flexDirection: "column", rowGap: "12px" }}
+            >
               <Box>
                 <TextField
-                  {...register("word")}
                   name="word"
                   label="Word/Sentence"
                   size="small"
+                  value={formik.values.word}
+                  onChange={formik.handleChange}
+                  error={formik.touched.word && Boolean(formik.errors.word)}
+                  helperText={formik.touched.word && formik.errors.word}
                   fullWidth
                 />
-                <Typography variant="body2" sx={{ color: red[600] }}>
-                  {errors.word?.message}
-                </Typography>
               </Box>
               <TextField
-                {...register("meaning")}
                 name="meaning"
                 label="Meaning"
                 size="small"
+                value={formik.values.meaning}
+                onChange={formik.handleChange}
                 fullWidth
               />
               <TextField
-                {...register("example1")}
                 name="example1"
                 label="Example 1"
                 size="small"
+                value={formik.values.example1}
+                onChange={formik.handleChange}
                 fullWidth
               />
               <TextField
-                {...register("example2")}
                 name="example2"
                 label="Example 2"
                 size="small"
+                value={formik.values.example2}
+                onChange={formik.handleChange}
                 fullWidth
               />
               <Button variant="contained" type="submit">
